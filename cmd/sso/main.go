@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"os"
 
+	"go.mod/internal/app"
 	"go.mod/internal/config"
 )
 
@@ -18,10 +19,14 @@ func main() {
 
 	log := setupLogger(cfg.Env)
 
-	log.Info("startin application",
+	log.Info("starting application",
 		slog.String("env", cfg.Env),
 		slog.String("storage_path", cfg.StoragePath),
 		slog.String("", cfg.GRPC.Timeout.String()))
+
+	application := app.New(log, cfg.GRPC.Port, cfg.StoragePath, cfg.TokenTTL)
+
+	application.GRPCSrv.MustRun()
 
 }
 
