@@ -2,10 +2,13 @@ package auth
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"log/slog"
 	"time"
 
 	"go.mod/internal/domain/models"
+	"go.mod/internal/storage"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -24,6 +27,10 @@ type UserSaver interface {
 		passHash string,
 	) (uid int64, err error)
 }
+
+var (
+	ErrInvalidCredentials = errors.New("invalid credentials")
+)
 
 type UserProvider interface {
 	User(ctx context.Context, email string) (models.User, error)
@@ -58,7 +65,23 @@ func (a *Auth) Login(
 	password string,
 	appID int,
 ) (string, error) {
-	panic("implement me")
+
+	const op = "auth.Login"
+
+	log := a.log.With(
+		slog.String("op", op),
+		slog.String("email", email),
+	)
+	log.Info("login attempt")
+
+	user, err := a.usrProvider.User(ctx, email)
+	if err != nil {
+		if errors.Is(err, storage.ErrUserNotFound) {
+			a.log.Warn("user not found", slog.String("error", err.Error()))
+			return "", fmt.Errorf("%s: %w", op, ErrInvalidCredentials)
+		}
+	}
+
 }
 
 func (a *Auth) ReisterNewUser(
